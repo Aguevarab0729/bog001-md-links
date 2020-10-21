@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/Aguevarab0729/bog001-md-links/issues"
   },
-  "homepage": "https://github.com/Aguevarab0729/bog001-md-links#readme"
+  "homepage": "https://github.com/Aguevarab0729/bog001-md-links#readme",
+  "dependencies": {
+    "marked": "^1.2.0"
+  }
 }

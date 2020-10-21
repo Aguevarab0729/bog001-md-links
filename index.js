@@ -2,25 +2,16 @@ module.exports = () => {
   // ...
 };
 
-
-
-let linksArchivo = false;
- */
-
-
-
-
 // Ejemplo proyecto mdlinks
-/* 
 const mdLinks = require("md-links");
 
-mdLinks("./some/example.md")
+mdLinks("./src/README.md")
   .then(links => {
     // => [{ href, text, file }]
   })
   .catch(console.error);
 
-mdLinks("./some/example.md", { validate: true })
+mdLinks("./src/README.md", { validate: true })
   .then(links => {
     // => [{ href, text, file, status, ok }]
   })
