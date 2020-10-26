@@ -3,8 +3,9 @@ const http = require('http');
 const https = require('https')
 const fs = require('fs');
 const { rejects } = require('assert');
-const file = './README.md';
+const file = './prueba.md';
 const marked = require('marked');
+const fetch = require('node-fetch');
 
 //path resolve es el método que resuelve una secuencia de rutas o segmentos de ruta en una ruta absoluta 
 //devuelve una cadena 
@@ -12,12 +13,12 @@ const absoluteRoute = path.resolve(file);
 
 const readFile = (route) => {
   const promise = new Promise((resolve, reject) => {
-    fs.readFile(route, 'utf8', (err, data) =>{
+    fs.readFile(route, 'utf8', (err, data) => {
       if(err){
-        reject('archivo invalido')
+        reject('archivo invalido');
       }
       else{
-        resolve(data)
+        resolve(data);
       }
     })
   })
@@ -26,83 +27,109 @@ const readFile = (route) => {
 
 readFile(absoluteRoute)
 .then((data) => {
-  console.log(data)
+  console.log(data);
 })
-
-/* const extension = path.extname(file); 
-console.log(extension);*/
 
 //Verifica si es Archivo o Directorio 
 const fileOrDirectory = (route) => {
   const files = [];
   if (path.extname(route) === '.md') {
-      files.push(route)
-      return files
+      files.push(route);
+      return files;
   } else {
       const directory = fs.readdir(route);
       const filterFile = directory.filter(file => path.extname(file) === '.md')
       filterFile.forEach((elem) => {
-          const validFiles = path.join(route, elem);
-          files.push(validFiles);
+        const validFiles = path.join(route, elem);
+        files.push(validFiles);
       })
-      return files
+      return files;
   }
 }
 console.log(fileOrDirectory(absoluteRoute));
 
+
+// funcion para extraer Links en un archivo md
+
 const extractLinks = (route => {
   return new Promise((resolve, reject) => {
-    readFile(route).then(res => {
+    readFile(route)
+    .then(res => {
       const links = [];
       const renderer = new marked.Renderer();
       renderer.link = function(href,title,text){
           links.push({
-            href:href,
-            text:text,
-            file:route})  
+            href:href,    // Url o direccion link
+            text:text,    // Texto o descripcion del link 
+            file:route})  // Ruta, lugar donde se encontró el link
       } 
         marked(res,{renderer:renderer}); 
-        resolve(links)
+        resolve(links);
+    })
+    .catch(err => {
+      reject(err);
+      })
+  })
+});
+
+extractLinks(absoluteRoute)
+.then((links) => {
+  console.log(links);
+}).catch((error) => {
+  console.log(error);
+})
+
+
+//[option --validate]
+const validateLinks = (route) => {
+  return new Promise((resolve, reject) => {
+    extractLinks(route).then(links => { 
+      let fetchLinks = links.map(element => {  
+        return fetch(element.href)
+        .then(res => {
+          if (res.status > 299) {
+            element.statusCode = res.status;
+            element.status = "FAIL";
+          } else {
+            element.statusCode = res.status;
+            element.status = "OK";
+          }
+        })
+        .catch((err) => {
+          element.status = err.code;
+        }) 
+    })
+      Promise.all(fetchLinks).then(res => {
+          resolve(links);
+      })
+    })
+    .catch(err=>{
+      reject(err);
+    })
+  })
+}
+
+validateLinks(absoluteRoute)
+.then((links) => {
+  console.log(links);
+})
+.catch((err) => {
+  console.log(err);
+}) 
+
+/* // [option --stats]
+const statsLinks = (path) => {
+  return new Promise((resolve, reject) => { 
+    fileOrDirectory(path)
+    .then(links => {
+      const uniqueLinks = new Set(links.map(element => element.href))
+      resolve({
+        total:links.length,
+        unique : uniqueLinks.size
+      })
     })
     .catch(err => {
       reject(err)
-      })
+    })
   })
-})
-extractLinks(absoluteRoute)
-.then((links)=>{
-  console.log(links)
-}).catch((error)=>{
-  console.log(error)
-})
-
-/* //Extraer links
-const extraclinks = () => {
-  const FDom = new JSDOM(`<!DOCTYPE html> <p>Hello world</p>`);
-  //console.log(dom.window.querySelector("p").textContent);
-  let document = dom.window.document;
-  let verLinks = document.querySelectorAll("a");
-  console.log(verLinks) 
-}*/
-
-/* const validarRuta = (path) => {
-  if(path.extname(path) === '.md'){
-    readFile(path)
-  }
-  else{
-    alert('Archivo NO tiene extencion md')
-  }
-}
-
-const LeerArchivo = (archivo) => {
-  fs.readFile(archivo, 'utf8', (err, data) => {
-    if(err){
-      console.log(error);
-      return
-    }
-    else{
-      mark(data)
-    }
-  })
-}
- */
+  } */

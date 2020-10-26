@@ -20,6 +20,8 @@
   },
   "homepage": "https://github.com/Aguevarab0729/bog001-md-links#readme",
   "dependencies": {
-    "marked": "^1.2.0"
-  }
+    "marked": "^1.2.0",
+    "node-fetch": "^2.6.1"
+  },
+  "devDependencies": {}
 }
