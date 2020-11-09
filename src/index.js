@@ -21,7 +21,7 @@ mdLinks("./some/dir")
   .then(links => {
     // => [{ href, text, file }]
   })
-  .catch(console.error); */
+  .catch(console.error); 
 
 
 /* // Funcion mdLinks 
@@ -34,5 +34,3 @@ let md = require("md-links") ({
   text: true,
   file: true
 }); */
-
-exports

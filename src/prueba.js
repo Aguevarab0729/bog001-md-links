@@ -15,7 +15,7 @@ const readFile = (route) => {
   const promise = new Promise((resolve, reject) => {
     fs.readFile(route, 'utf8', (err, data) => {
       if(err){
-        reject('archivo invalido');
+        reject('archivo invalido, necesitas un archivo con extension .md');
       }
       else{
         resolve(data);
@@ -24,33 +24,31 @@ const readFile = (route) => {
   })
   return promise;
 }
-
-readFile(absoluteRoute)
+/* readFile(absoluteRoute)
 .then((data) => {
   console.log(data);
-})
+}) */
 
-//Verifica si es Archivo o Directorio 
+//Valida si es directorio que sea un archivo con extencion .md
 const fileOrDirectory = (route) => {
   const files = [];
   if (path.extname(route) === '.md') {
-      files.push(route);
-      return files;
-  } else {
-      const directory = fs.readdir(route);
-      const filterFile = directory.filter(file => path.extname(file) === '.md')
-      filterFile.forEach((elem) => {
-        const validFiles = path.join(route, elem);
-        files.push(validFiles);
-      })
-      return files;
+    files.push(route);
+    return files;
+  } 
+  else {
+    const directory = fs.readdir(route);
+    const filterFile = directory.filter(file => path.extname(file) === '.md')
+    filterFile.forEach((elem) => {
+      const validFiles = path.join(route, elem);
+      files.push(validFiles);
+    })
+    return files;
   }
 }
-console.log(fileOrDirectory(absoluteRoute));
-
+/* console.log(fileOrDirectory(absoluteRoute)); */
 
 // funcion para extraer Links en un archivo md
-
 const extractLinks = (route => {
   return new Promise((resolve, reject) => {
     readFile(route)
@@ -58,49 +56,56 @@ const extractLinks = (route => {
       const links = [];
       const renderer = new marked.Renderer();
       renderer.link = function(href,title,text){
-          links.push({
-            href:href,    // Url o direccion link
-            text:text,    // Texto o descripcion del link 
-            file:route})  // Ruta, lugar donde se encontró el link
+        links.push({
+          href:href,    // Url o direccion link
+          text:text,    // Texto o descripcion del link 
+          file:route
+        })  // Ruta, lugar donde se encontró el link
       } 
-        marked(res,{renderer:renderer}); 
-        resolve(links);
+      marked(res,{renderer:renderer}); 
+      resolve(links);
     })
     .catch(err => {
       reject(err);
-      })
+    })
   })
 });
 
-extractLinks(absoluteRoute)
+/* extractLinks(absoluteRoute)
 .then((links) => {
   console.log(links);
 }).catch((error) => {
   console.log(error);
-})
-
+}) */
 
 //[option --validate]
 const validateLinks = (route) => {
+  let broke = 0;
   return new Promise((resolve, reject) => {
     extractLinks(route).then(links => { 
-      let fetchLinks = links.map(element => {  
-        return fetch(element.href)
+      let fetchLinks = links.map(elem => {  
+        return fetch(elem.href)
         .then(res => {
           if (res.status > 299) {
-            element.statusCode = res.status;
-            element.status = "FAIL";
-          } else {
-            element.statusCode = res.status;
-            element.status = "OK";
+            elem.status = "FAIL";
+            elem.statusCode = res.status;
+          } 
+          else if (res.status === 404){
+            broke++;
+          }
+          else {
+            elem.status = "OK";
+            elem.statusCode = res.status;
           }
         })
         .catch((err) => {
-          element.status = err.code;
+          elem.status = err.code;
+          elem.statusCode = 500;
         }) 
-    })
+      })
+      
       Promise.all(fetchLinks).then(res => {
-          resolve(links);
+        resolve(links);
       })
     })
     .catch(err=>{
@@ -109,27 +114,114 @@ const validateLinks = (route) => {
   })
 }
 
-validateLinks(absoluteRoute)
+/* validateLinks(absoluteRoute)
 .then((links) => {
   console.log(links);
 })
 .catch((err) => {
   console.log(err);
-}) 
+}) */
 
-/* // [option --stats]
-const statsLinks = (path) => {
+//option stats
+const statsLinks = (route) => {
   return new Promise((resolve, reject) => { 
-    fileOrDirectory(path)
+    extractLinks(route)
     .then(links => {
-      const uniqueLinks = new Set(links.map(element => element.href))
+      const uniqueLinks = new Set(links.map(elem => elem.href))
       resolve({
         total:links.length,
         unique : uniqueLinks.size
       })
     })
     .catch(err => {
+      reject(err);
+    })
+  })
+} 
+  
+/* statsLinks(absoluteRoute)
+  .then((links) => {
+    console.log(links);
+  })
+  .catch((err) => {
+    console.log(err);
+  })  */
+
+//[option --validate --stats]
+const statsAndValidateLinks = (route) => {
+  return new Promise((resolve,reject) => {
+    validateLinks(route)
+    .then(links => {
+      const statusLinks = links.map(element => element.status)
+      const totalLinks = links.length;
+      
+      let linksOk = statusLinks.toString().match(/OK/g)   //Pasamos a string el status y utilizando expresiones regulares, en este caso literal y el método .match() buscamos coincidencia globalmente con la palabra entre barra /OK/ y las devuelve en un array.
+      if(linksOk != null){            // es null cuando no encuentra ninguna coincidencia
+        linksOk = linksOk.length;
+      }
+      else{
+        linksOk =  0;
+      }
+
+      let brokenLinks = statusLinks.toString().match(/FAIL/g)
+      if(brokenLinks != null){
+        brokenLinks = brokenLinks.length;
+      }
+      else{
+        brokenLinks =  0;
+      }
+
+      resolve({
+        total: totalLinks,
+        ok: linksOk,
+        broken: brokenLinks
+      })
+    })
+    .catch(err=>{
+      reject(err);
+    })
+  })
+}
+
+/* statsAndValidateLinks(absoluteRoute)
+.then((links) => {
+  console.log(links);
+})
+.catch((err) => {
+  console.log(err);
+}) */
+
+const mdLinks = (route, options = {}) => {
+  return new Promise((resolve, reject) => {
+    const getFiles = fileOrDirectory(route);
+    let result = getFiles.map((elem) => {
+      if (options.validate && !options.stats) {
+        return validateLinks(elem);
+      } 
+      else if (options.stats && !options.validate) {
+        return statsLinks(elem);
+      } 
+      else if (options.validate && options.stats) {
+        return statsAndValidateLinks(elem);
+      } 
+      else if (options) {
+        return extractLinks(elem);
+      }
+    })
+      
+    Promise.all(result)
+    .then((res) => {
+      let resultArray = [].concat.apply([], res);
+      resolve(resultArray);
+    })
+    .catch(err => {
       reject(err)
     })
   })
-  } */
+}
+
+/* 
+mdLinks(absoluteRoute,{validate: true})
+.then(console.log).catch(console.log); */
+
+module.exports = mdLinks;
