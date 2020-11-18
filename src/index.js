@@ -82,7 +82,8 @@ const extractLinks = (route => {
 const validateLinks = (route, options = {}) => {
   let broke = 0;
   return new Promise((resolve, reject) => {
-    extractLinks(route).then(links => { 
+    extractLinks(route)
+    .then(links => { 
       let fetchLinks = links.map(elem => {  
         return fetch(elem.href)
         .then(res => {
@@ -101,11 +102,13 @@ const validateLinks = (route, options = {}) => {
         }) 
       })
       
-      Promise.all(fetchLinks).then(res => {
+      Promise.all(fetchLinks)
+      .then(res => {
         resolve(links);
+        //console.log(res);
       })
     })
-    .catch(err=>{
+    .catch(err => {
       reject(err);
     })
   })
@@ -205,7 +208,9 @@ const mdLinks = (route, options = {}) => {
         return extractLinks(elem);
       }
     })
-      
+    
+    //promise.all toma un array de promesas y devuelve una sola promesa
+    //Esta se resuelve solo cuando se cumplen todas las promesas y sus resultados se convierten en el resultado 
     Promise.all(result)
     .then((res) => {
       let resultArray = [].concat.apply([], res);
@@ -220,4 +225,4 @@ const mdLinks = (route, options = {}) => {
 /* mdLinks(absoluteRoute,{validate: false})
 .then(console.log).catch(console.log); */
 
-module.exports = {mdLinks, extractLinks};
+module.exports = {mdLinks, extractLinks, fileOrDirectory, validateLinks, statsLinks, statsAndValidateLinks};

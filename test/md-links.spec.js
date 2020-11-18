@@ -1,4 +1,4 @@
-const mdLinks = require('../src/index.js');
+const mdLinks = require('../src/index.js').mdLinks;
 const path = require('path');
 const axios = require('axios');
 const file = '../src/prueba.md';
@@ -23,11 +23,10 @@ describe('mdLinks', () => {
   });
 
   /* it('read the md file and return the array with links information', done => {
-    return mdLinks(absoluteRoute, {validate:false, stats: false})
+    return mdLinks(absoluteRoute, { validate:false })
     .then((res) => {
-      expect(res).toStrictEqual(extractLinks);
+      expect(res).toBe(extractLinks);
       done();
-    });
+    })
   }); */
 });
-
